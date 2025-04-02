@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+        google.charts.load('current', { 'packages': ['corechart'] });
+        google.charts.setOnLoadCallback(fetchFirebaseData);
+
+        function fetchFirebaseData() {
+            // 🔥 Replace with your actual Firebase Database URL
+            var firebaseUrl = "https://beeguard-6b72f-default-rtdb.firebaseio.com/graphData.json";
+
+            fetch(firebaseUrl)
+                .then(response => response.json())
+                .then(data => {
+                    drawChart(data.tempextData, data.tempintData);
+                })
+                .catch(error => console.error("Error fetching data:", error));
+        }
+
+        function drawChart(tempextData, tempintData) {
+            var dataArray = [['Time', 'Buiten', 'Binnen']];
+
+            // Collect all unique timestamps from both datasets
+            var allTimestamps = new Set([...Object.keys(tempextData), ...Object.keys(tempintData)]);
+
+            // Sort timestamps chronologically
+            var sortedTimestamps = [...allTimestamps].sort();
+
+            // Convert timestamps into data points for Google Charts
+            sortedTimestamps.forEach(timestamp => {
+                var externalTemp = tempextData[timestamp] || null; // Default to null if missing
+                var internalTemp = tempintData[timestamp] || null; // Default to null if missing
+
+                // Convert timestamp string into a Date object (for Google Charts)
+                var date = new Date(timestamp);
+
+                // Only push valid date entries (ignore non-date keys like "0", "1", "2")
+                if (!isNaN(date.getTime())) {
+                    dataArray.push([date, externalTemp, internalTemp]);
+                }
+            });
+
+            var data = google.visualization.arrayToDataTable(dataArray);
+
+            // Chart options
+            var options = {
+                //title: 'Temperatuur',
+                chartArea: { left: 100, top: 50, right: 80, width: '100%' },
+                pointSize: 7, // Show data points
+                legend: { position: 'top' }, // Show legend
+                hAxis: {
+                    title: 'Datum & Tijd',
+                    format: 'MMM dd, HH:mm', // Format x-axis labels
+                    slantedText: true,  // Enable angled labels
+                    slantedTextAngle: 35,
+                    showTextEvery: 2
+                },
+                vAxis: { title: 'Temperatuur (°C)' },
+                series: {
+                    0: { color: 'blue' },  // External temperature
+                    1: { color: 'red' }  // Internal temperature
+                }
+            };
+
+            // Draw the chart
+            var chart = new google.visualization.LineChart(document.getElementById('curve_chart'));
+            chart.draw(data, options);
+        }
+    </script>
+</head>
+
+<body>
+    <div id="curve_chart" style="width: 100%; height: 500px;"></div>
+</body>
+
+</html>
